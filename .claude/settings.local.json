@@ -1,0 +1,24 @@
+{
+  "permissions": {
+    "allow": [
+      "WebSearch",
+      "WebFetch(domain:www.taifex.com.tw)",
+      "Bash(python -m pip install -r requirements.txt --quiet)",
+      "Bash(python scripts/fetch_universe.py)",
+      "Bash(python -c \"import json; u=json.load\\(open\\('data/universe.json',encoding='utf-8'\\)\\); print\\('Listed top 5:'\\); [print\\(' ',r\\) for r in u['listed'][:5]]; print\\('OTC top 5:'\\); [print\\(' ',r\\) for r in u['otc'][:5]]\")",
+      "Bash(python -c ' *)",
+      "Bash(python scripts/fetch_events.py)",
+      "WebFetch(domain:www.tpex.org.tw)",
+      "Bash(python scripts/build_adjusted.py 0050)",
+      "Bash(python scripts/fetch_benchmarks.py)",
+      "Bash(python scripts/build_adjusted.py 2330 0056 00878 0050)",
+      "Bash(python scripts/build_adjusted.py)",
+      "mcp__Claude_Preview__preview_start",
+      "WebFetch(domain:mis.twse.com.tw)",
+      "Bash(python -X utf8 scripts/update_major_etf.py --list-only)",
+      "Bash(python -X utf8 scripts/update_major_etf.py --skip-events)",
+      "Bash(python -X utf8 -c ' *)",
+      "Bash(python -X utf8 scripts/build_adjusted.py)"
+    ]
+  }
+}

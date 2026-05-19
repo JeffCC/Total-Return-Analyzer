@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>台股總報酬比較 (含息)</title>
+<link rel="stylesheet" href="css/style.css" />
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.5.1/dist/echarts.min.js"></script>
+</head>
+<body>
+<header>
+  <h1>台股總報酬比較<span class="sub">含息 / 含配股 / 含現增 / 含分割</span></h1>
+  <div class="updated">資料更新：<span id="updated">—</span></div>
+</header>
+
+<section class="controls">
+  <div class="panel">
+    <label class="label">標的 (2~6 檔)</label>
+    <div class="ticker-row">
+      <input id="ticker-input" type="text" placeholder="輸入代碼或名稱搜尋…" autocomplete="off" />
+      <div id="ticker-suggest" class="suggest hidden"></div>
+    </div>
+    <div id="selected-tickers" class="chips"></div>
+  </div>
+
+  <div class="panel">
+    <label class="label">基準 (選配)</label>
+    <label class="check"><input type="checkbox" id="bench-0050" /> <span>0050 元大台灣50</span></label>
+    <label class="check"><input type="checkbox" id="bench-IR0001" /> <span>IR0001 加權報酬指數</span></label>
+  </div>
+
+  <div class="panel">
+    <label class="label">區間</label>
+    <div class="range-buttons">
+      <button data-range="1M">1M</button>
+      <button data-range="3M">3M</button>
+      <button data-range="6M">6M</button>
+      <button data-range="YTD">YTD</button>
+      <button data-range="1Y" class="active">1Y</button>
+      <button data-range="MAX">MAX</button>
+    </div>
+    <div class="custom-range">
+      <input type="date" id="custom-start" />
+      <span>～</span>
+      <input type="date" id="custom-end" />
+      <button id="custom-apply">套用</button>
+    </div>
+  </div>
+</section>
+
+<section class="chart-wrap">
+  <div id="chart"></div>
+</section>
+
+<section class="summary">
+  <table id="summary-table">
+    <thead>
+      <tr>
+        <th>標的</th><th>市場</th>
+        <th>起點</th><th>終點</th><th>天數</th>
+        <th>含息報酬</th><th>純價格報酬</th><th>年化(含息)</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+</section>
+
+<footer>
+  <small>資料來源：TWSE (上市) / TPEX (上櫃) / FinMind (OTC 除權息 + 加權報酬指數)。
+  含息計算採用後復權因子法 (factor = 除權息前收盤 / 除權息參考價)，
+  自動處理現金股利、股票股利、現金增資 (假設必認)、股票分割 (人工補錄於 manual_events.json)。</small>
+</footer>
+
+<script src="js/calc.js"></script>
+<script src="js/data.js"></script>
+<script src="js/chart.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>
