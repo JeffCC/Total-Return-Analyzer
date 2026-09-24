@@ -33,7 +33,7 @@ def fetch_twse_month(s, code: str, year: int, month: int):
     """TWSE STOCK_DAY: 回傳 (rows, name)。rows = [{d,o,h,l,c,v}]。"""
     yyyymmdd = f"{year:04d}{month:02d}01"
     params = {"date": yyyymmdd, "stockNo": code, "response": "json"}
-    r = s.get(TWSE_URL, params=params, timeout=30)
+    r = s.get(TWSE_URL, params=params, timeout=60)
     r.raise_for_status()
     js = r.json()
     if js.get("stat") != "OK":
@@ -72,7 +72,7 @@ def fetch_tpex_month(s, code: str, year: int, month: int):
     """TPEX tradingStock: 西元年/月格式。回傳 (rows, name)。"""
     date_str = f"{year:04d}/{month:02d}/01"
     params = {"date": date_str, "code": code, "response": "json"}
-    r = s.get(TPEX_URL, params=params, timeout=30)
+    r = s.get(TPEX_URL, params=params, timeout=60)
     r.raise_for_status()
     js = r.json()
     name = ""
@@ -123,12 +123,17 @@ def month_iter(start: date, end: date):
 
 
 def fetch_one(code: str, market: str, start: date, end: date):
-    """Return (rows, name). 內建 retry: 失敗時等 3s 再試一次。"""
+    """Return (rows, name, failed_month). 內建 retry: 失敗時等 3s 再試一次。
+
+    若某月 3 次 retry 全失敗 → 停止繼續 (不再抓後面的月),回傳到目前為止的 rows
+    並在 failed_month 標記卡住的 (year, month)。這樣下次增量會從缺口重試,不會有 gap。
+    """
     s = session()
     fetcher = fetch_twse_month if market == "TWSE" else fetch_tpex_month
     all_rows = []
     seen = set()
     name_seen = ""
+    failed_month = None
     for y, m in month_iter(start, end):
         rows, nm = None, ""
         for attempt in range(3):
@@ -139,7 +144,9 @@ def fetch_one(code: str, market: str, start: date, end: date):
                 print(f"  ! {code} {y}-{m:02d} attempt {attempt+1}: {e}")
                 polite_sleep(3.0 + attempt * 2)
         if rows is None:
-            continue
+            failed_month = (y, m)
+            print(f"  !!! {code} {y}-{m:02d} FAILED after 3 retries — stopping here, next run will resume")
+            break
         if nm and not name_seen:
             name_seen = nm
         for r in rows:
@@ -151,10 +158,12 @@ def fetch_one(code: str, market: str, start: date, end: date):
             all_rows.append(r)
         polite_sleep()
     all_rows.sort(key=lambda r: r["d"])
-    return all_rows, name_seen
+    return all_rows, name_seen, failed_month
 
 
-def update_ticker(code: str, market: str, end: date | None = None) -> dict:
+def update_ticker(code: str, market: str, end: date | None = None):
+    """Return (existing_dict, failed_month)。failed_month 若非 None 代表這次卡在該月,
+    下次跑會從那裡繼續補。"""
     """增量更新：讀現有 JSON，從最後日 +1 開始抓到 end（預設今天）。"""
     end = end or date.today()
     path = PRICES_DIR / f"{code}.json"
@@ -165,11 +174,11 @@ def update_ticker(code: str, market: str, end: date | None = None) -> dict:
         start = last_d + timedelta(days=1)
         if start > end:
             print(f"  [{code}] up-to-date ({last_d})")
-            return existing
+            return existing, None
     else:
         start = START_DATE
     print(f"  [{code}] fetching {market} {start} → {end}")
-    new_rows, name = fetch_one(code, market, start, end)
+    new_rows, name, failed_month = fetch_one(code, market, start, end)
     if name and not existing.get("name"):
         existing["name"] = name
     if new_rows:
@@ -183,7 +192,7 @@ def update_ticker(code: str, market: str, end: date | None = None) -> dict:
     else:
         save_json(path, existing)
         print(f"  [{code}] no new rows")
-    return existing
+    return existing, failed_month
 
 
 if __name__ == "__main__":

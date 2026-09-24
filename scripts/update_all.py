@@ -47,18 +47,25 @@ def main():
                 listed.append({"code": c, "name": "", "market": "TWSE"})
 
     print(f"=== Step 2: prices (listed={len(listed)}, otc={len(otc)}) ===")
+    incomplete = []  # [(code, market, (y,m)), ...]
     for i, r in enumerate(listed, 1):
         print(f" [{i}/{len(listed)}] TWSE {r['code']} {r.get('name','')}")
         try:
-            fetch_prices.update_ticker(r["code"], "TWSE")
+            _, fm = fetch_prices.update_ticker(r["code"], "TWSE")
+            if fm:
+                incomplete.append((r["code"], "TWSE", fm))
         except Exception as e:
             print(f"  ! error: {e}")
+            incomplete.append((r["code"], "TWSE", "exception"))
     for i, r in enumerate(otc, 1):
         print(f" [{i}/{len(otc)}] TPEX {r['code']} {r.get('name','')}")
         try:
-            fetch_prices.update_ticker(r["code"], "TPEX")
+            _, fm = fetch_prices.update_ticker(r["code"], "TPEX")
+            if fm:
+                incomplete.append((r["code"], "TPEX", fm))
         except Exception as e:
             print(f"  ! error: {e}")
+            incomplete.append((r["code"], "TPEX", "exception"))
 
     print("=== Step 3: events ===")
     otc_codes = None if args.no_otc_events else [r["code"] for r in otc]
@@ -77,6 +84,11 @@ def main():
     fetch_benchmarks.copy_0050_benchmark()
     build_adjusted.build_index()
     print("=== Done ===")
+    if incomplete:
+        print()
+        print(f"!!! {len(incomplete)} ticker(s) had API failures — re-run the same command to fill the gaps:")
+        for code, mkt, fm in incomplete:
+            print(f"    {mkt} {code}  stopped at {fm}")
 
 
 if __name__ == "__main__":

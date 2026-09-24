@@ -157,7 +157,7 @@ def build_index() -> None:
             "end": rows[-1]["d"],
             "n": len(rows),
         })
-    save_json(TICKERS_DIR.parent / "index.json", {"tickers": items, "generated": items[0]["end"] if items else None})
+    save_json(TICKERS_DIR.parent / "index.json", {"tickers": items, "generated": fmt_iso(date.today())})
     print(f"[index] {len(items)} tickers")
 
 
